@@ -255,6 +255,7 @@ impl ContainerListOptionsBuilder {
 pub struct ContainerOptions {
     pub name: Option<String>,
     params: HashMap<&'static str, String>,
+    params_int: HashMap<&'static str, i64>,
     params_list: HashMap<&'static str, Vec<String>>,
     params_hash: HashMap<String, Vec<HashMap<String, String>>>,
 }
@@ -265,10 +266,13 @@ impl ToJson for ContainerOptions {
         let mut host_config: BTreeMap<String, Json> = BTreeMap::new();
 
         self.parse_from(&self.params, &mut host_config, &mut body);
+        self.parse_from(&self.params_int, &mut host_config, &mut body);
         self.parse_from(&self.params_list, &mut host_config, &mut body);
         self.parse_from(&self.params_hash, &mut host_config, &mut body);
 
         body.insert("HostConfig".to_string(), host_config.to_json());
+
+        println!("{}", body.to_json());
 
         body.to_json()
     }
@@ -312,6 +316,7 @@ impl ContainerOptions {
 pub struct ContainerOptionsBuilder {
     name: Option<String>,
     params: HashMap<&'static str, String>,
+    params_int: HashMap<&'static str, i64>,
     params_list: HashMap<&'static str, Vec<String>>,
     params_hash: HashMap<String, Vec<HashMap<String, String>>>,
 }
@@ -319,6 +324,7 @@ pub struct ContainerOptionsBuilder {
 impl ContainerOptionsBuilder {
     pub fn new(image: &str) -> ContainerOptionsBuilder {
         let mut params = HashMap::new();
+        let params_int = HashMap::new();
         let params_list = HashMap::new();
         let params_hash = HashMap::new();
 
@@ -326,6 +332,7 @@ impl ContainerOptionsBuilder {
         ContainerOptionsBuilder {
             name: None,
             params: params,
+            params_int: params_int,
             params_list: params_list,
             params_hash: params_hash,
         }
@@ -415,10 +422,58 @@ impl ContainerOptionsBuilder {
         self
     }
 
+    pub fn cpus(&mut self, cpus: i64) -> &mut ContainerOptionsBuilder {
+        self.params_int.insert("HostConfig.NanoCPUs", cpus);
+        self
+    }
+
+    pub fn cpu_percent(&mut self, percentage: i64) -> &mut ContainerOptionsBuilder {
+        if percentage <= 100 {
+            self.params_int.insert("HostConfig.CpuPercent", percentage);
+        }
+        self
+    }
+
+    pub fn cpu_shares(&mut self, shares: i64) -> &mut ContainerOptionsBuilder {
+        self.params_int.insert("HostConfig.CpuShares", shares);
+        self
+    }
+
+    pub fn cpu_period(&mut self, period: i64) -> &mut ContainerOptionsBuilder {
+        self.params_int.insert("HostConfig.CpuPeriod", period);
+        self
+    }
+
+    pub fn cpu_rt_period(&mut self, rt_period: i64) -> &mut ContainerOptionsBuilder {
+        self.params_int.insert("HostConfig.CpuRealtimePeriod", rt_period);
+        self
+    }
+
+    pub fn cpu_rt_runtime(&mut self, rt_runtime: i64) -> &mut ContainerOptionsBuilder {
+        self.params_int.insert("HostConfig.CpuRealtimeRuntime", rt_runtime);
+        self
+    }
+
+    pub fn cpu_quota(&mut self, quota: i64) -> &mut ContainerOptionsBuilder {
+        self.params_int.insert("HostConfig.CpuQuota", quota);
+        self
+    }
+
+    pub fn cpuset_cpus(&mut self, set: &str) -> &mut ContainerOptionsBuilder {
+        self.params.insert("HostConfig.CpusetCpus", set.to_owned());
+        self
+    }
+
+    pub fn cpuset_mems(&mut self, mems: &str) -> &mut ContainerOptionsBuilder {
+        self.params.insert("HostConfig.CpusetMems", mems.to_owned());
+        self
+    }
+
     pub fn build(&self) -> ContainerOptions {
         ContainerOptions {
             name: self.name.clone(),
             params: self.params.clone(),
+            params_int: self.params_int.clone(),
             params_list: self.params_list.clone(),
             params_hash: self.params_hash.clone(),
         }
